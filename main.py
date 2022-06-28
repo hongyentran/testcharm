@@ -27,6 +27,9 @@ def testCommitment_GS08():
     assert cm.decommit(pk, c, d, m), "FAILED to decommit"
     if debug: print("Successful and Verified decommitment!!!")
 
+def testScheme():
+
+
 def testPairing():
     # Test BLS signature schemes from pairings
     # Generate (pk, sk)
