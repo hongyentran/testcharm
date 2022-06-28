@@ -5,10 +5,18 @@ from functools import reduce
 
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, pair
 import numpy as np
+import time
+import sys
+from math import log
 
 
 debug = False
 
+
+def bytes_needed(n):
+    if n == 0:
+        return 1
+    return int(log(n, 256)) + 1
 
 class LMC:
     def __init__(self, groupObj):
@@ -55,7 +63,7 @@ class LMC:
     def verify(self, C, F, y, evidence):
         u = self.pp['g'] ** 0
         for i in range(self.q):
-            for j in range(1, self.l):
+            for j in range(self.l):
                 u = u * (self.pp['H'][i+1][self.l - j] ** F[i][j])
         v = self.pp['g'] ** 0
         for i in range(self.q):
@@ -70,23 +78,49 @@ class LMC:
 if __name__ == "__main__":
     debug = True
     q = 1
-    l = 3
+    l = 2
+
+    print('l = ', l)
 
     group = PairingGroup('SS512')
     lmc = LMC(group)
+    print('Byte size of group order: ', bytes_needed(group.order()))
 
+    start = time.time()
     lmc.setup(q, l)
+    print('Set up time:', time.time() - start)
 
     x = [group.random(ZR) for i in range(l)]
     F = [[0] * l] * q
+    print(x)
+    a1 = 141521963257168023000607995328529515396172492561
+    a2 = 575220683234108754582923420788674310618729045392
+
+
+    t = time.time()
+    for i in range(100000):
+        a = x[0] ** x[1]
+    print("Time GMP: ", time.time() - t)
+
+
+
     for i in range(q):
         for j in range(l):
             F[i][j] = group.random(ZR)
     y = np.dot(np.array(F), np.array(x))
 
+    start = time.time()
     C = lmc.com(x)
+    print('Compute commitment time:', time.time() - start)
+
+    start = time.time()
     evidence = lmc.open(F, y, x)
+    print('Generate proof time:', time.time() - start)
+
+    start = time.time()
     lmc.verify(C, F, y, evidence)
+    print('Verify time:', time.time() - start)
+
     y = y + 1
     lmc.verify(C, F, y, evidence)
 
